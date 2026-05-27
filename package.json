@@ -4,9 +4,44 @@
   "description": "GUI para captura automática de processos do Procon SP Digital",
   "main": "out/electron/main.js",
   "scripts": {
-    "build": "tsc",
-    "start": "npm run build && electron .",
-    "dev": "tsc --watch & sleep 3 && electron . --dev"
+    "build":      "tsc",
+    "start":      "npm run build && electron .",
+    "dev":        "concurrently -k \"tsc --watch\" \"wait-on out/electron/main.js && electron . --dev\"",
+    "dist":       "npm run build && electron-builder",
+    "dist:mac":   "npm run build && electron-builder --mac",
+    "dist:win":   "npm run build && electron-builder --win",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "dist:ci":    "npm run build && electron-builder --publish always"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leonhatori/procon-capture-gui"
+  },
+  "build": {
+    "appId": "br.gov.sp.procon.capture",
+    "productName": "ProconCapture",
+    "directories": { "output": "dist" },
+    "files": [
+      "out/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "icon": "assets/icon.png",
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "linux": {
+      "target": ["AppImage", "deb", "rpm"],
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
