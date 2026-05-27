@@ -8,7 +8,7 @@
     "start":      "npm run build && electron .",
     "dev":        "concurrently -k \"tsc --watch\" \"wait-on out/electron/main.js && electron . --dev\"",
     "dist":       "npm run build && electron-builder",
-    "dist:mac":   "npm run build && electron-builder --mac",
+    "dist:mac":   "npm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac",
     "dist:win":   "npm run build && electron-builder --win",
     "dist:linux": "npm run build && electron-builder --linux",
     "dist:ci":    "npm run build && electron-builder --publish always"
