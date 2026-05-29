@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'" />
+  <title>ProconCapture</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Dark theme (default) */
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface2:  #21262d;
+      --border:    #30363d;
+      --accent:    #2f81f7;
+      --accent2:   #58a6ff;
+      --green:     #3fb950;
+      --red:       #f85149;
+      --amber:     #d29922;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --radius:    10px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.3);
+      --shadow-md: 0 4px 18px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.3);
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg:        #f6f8fa;
+        --surface:   #ffffff;
+        --surface2:  #f6f8fa;
+        --border:    #d0d7de;
+        --accent:    #0969da;
+        --accent2:   #0969da;
+        --green:     #1a7f37;
+        --red:       #cf222e;
+        --amber:     #9a6700;
+        --text:      #1f2328;
+        --muted:     #636c76;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,.1),  0 1px 2px rgba(0,0,0,.07);
+        --shadow-md: 0 4px 18px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.07);
+      }
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+    /* macOS vibrancy: body transparent so native blur shows through */
+    html.mac body { background: transparent; }
+
+    /* ── Topbar ──────────────────────────────────────────────────────────── */
+    .topbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    /* macOS: leave 84 px on the left for ⬤⬤⬤ traffic lights (x:16, y:16) */
+    html.mac .topbar {
+      padding-left: 84px;
+      background: rgba(13,17,23,0.72);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+              backdrop-filter: saturate(180%) blur(20px);
+      border-bottom-color: rgba(255,255,255,0.07);
+    }
+    @media (prefers-color-scheme: light) {
+      html.mac .topbar {
+        background: rgba(255,255,255,0.78);
+        border-bottom-color: rgba(0,0,0,0.08);
+      }
+    }
+    .topbar-title { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
+    .topbar-title span { color: var(--accent); }
+    .spacer { flex: 1; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .badge.online  { background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green); }
+    .badge.offline { background: color-mix(in srgb, var(--red)   14%, transparent); color: var(--red); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    /* ── Layout ──────────────────────────────────────────────────────────── */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────────── */
+    .sidebar {
+      width: 210px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 4px;
+      padding: 12px 8px;
+      flex-shrink: 0;
+      -webkit-app-region: no-drag;
+      overflow-y: auto;
+    }
+    /* macOS: frosted glass over vibrancy */
+    html.mac .sidebar {
+      background: rgba(22,27,34,0.45);
+      border-right-color: rgba(255,255,255,0.06);
+      -webkit-backdrop-filter: saturate(200%) blur(24px);
+              backdrop-filter: saturate(200%) blur(24px);
+    }
+    @media (prefers-color-scheme: light) {
+      html.mac .sidebar {
+        background: rgba(246,248,250,0.6);
+        border-right-color: rgba(0,0,0,0.07);
+      }
+    }
+    /* Windows Acrylic: subtle tint over blur */
+    html.win .sidebar { background: rgba(22,27,34,0.55); }
+    @media (prefers-color-scheme: light) {
+      html.win .sidebar { background: rgba(246,248,250,0.65); }
+    }
+
+    .sidebar-section {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 4px 6px 0;
+    }
+
+    /* ── Buttons ─────────────────────────────────────────────────────────── */
+    .btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px; border: none; border-radius: var(--radius);
+      cursor: pointer; font-size: 13px; font-weight: 500; font-family: var(--font);
+      transition: filter .12s, transform .1s, box-shadow .12s;
+      -webkit-app-region: no-drag; text-align: left; width: 100%;
+    }
+    .btn:hover:not(:disabled) { filter: brightness(1.1); }
+    .btn:active:not(:disabled) { transform: scale(.97); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary   { background: var(--accent); color: #fff; box-shadow: var(--shadow-sm); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-success   { background: #1f883d; color: #fff; box-shadow: var(--shadow-sm); }
+    @media (prefers-color-scheme: light) { .btn-success { background: #2da44e; } }
+    .btn-outline   { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-warn      { background: transparent; border: 1px solid var(--amber); color: var(--amber); }
+    .btn-sm { padding: 6px 10px; font-size: 12px; width: auto; }
+    .icon { font-size: 14px; line-height: 1; }
+
+    /* ── Capture status ──────────────────────────────────────────────────── */
+    .capture-status {
+      margin-top: auto; padding: 9px 10px; border-radius: var(--radius);
+      background: var(--surface2); font-size: 11px; color: var(--muted);
+      line-height: 1.5; flex-shrink: 0; border: 1px solid var(--border);
+    }
+    .capture-status.running {
+      color: var(--accent2);
+      border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+      animation: pulse-border 2s ease-in-out infinite;
+    }
+    @keyframes pulse-border {
+      0%, 100% { border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+      50%       { border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+    }
+    html.mac .capture-status { background: rgba(13,17,23,0.45); }
+    @media (prefers-color-scheme: light) {
+      html.mac .capture-status { background: rgba(246,248,250,0.6); }
+    }
+
+    /* ── Content area ────────────────────────────────────────────────────── */
+    .content {
+      flex: 1; overflow: hidden; display: flex; flex-direction: column;
+      -webkit-app-region: no-drag;
+      background: var(--bg);
+    }
+    html.mac .content {
+      background: rgba(13,17,23,0.78);
+      -webkit-backdrop-filter: blur(4px);
+              backdrop-filter: blur(4px);
+    }
+    @media (prefers-color-scheme: light) {
+      html.mac .content { background: rgba(246,248,250,0.82); }
+    }
+    html.win .content { background: rgba(13,17,23,0.82); }
+    @media (prefers-color-scheme: light) {
+      html.win .content { background: rgba(246,248,250,0.82); }
+    }
+
+    /* ── Tabs ────────────────────────────────────────────────────────────── */
+    .tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: transparent; padding: 0 20px; gap: 4px; flex-shrink: 0;
+    }
+    .tab {
+      padding: 10px 16px; font-size: 13px; font-weight: 500; color: var(--muted);
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s; -webkit-app-region: no-drag;
+    }
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    /* ── Panes ───────────────────────────────────────────────────────────── */
+    .pane { display: none; flex: 1; overflow-y: auto; padding: 20px; }
+    .pane.active { display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── Text selection ──────────────────────────────────────────────────── */
+    .content, .pane, .acomp-item, .text-block, .diag-card,
+    #logList, #rawList, #diagOutput {
+      user-select: text; -webkit-user-select: text;
+    }
+
+    /* ── Empty state ─────────────────────────────────────────────────────── */
+    .empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; color: var(--muted);
+    }
+    .empty-icon  { font-size: 48px; opacity: .4; }
+    .empty-title { font-size: 16px; font-weight: 600; color: var(--text); }
+    .empty-desc  { font-size: 13px; text-align: center; max-width: 300px; line-height: 1.65; }
+
+    /* ── Process cards ───────────────────────────────────────────────────── */
+    .process-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: border-color .15s, box-shadow .2s;
+    }
+    .process-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); }
+    .process-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; cursor: pointer;
+    }
+    .process-id {
+      font-family: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
+      font-size: 10px; color: var(--muted);
+      background: var(--surface2); padding: 2px 7px; border-radius: 6px;
+      border: 1px solid var(--border); flex-shrink: 0;
+    }
+    .process-meta { flex: 1; min-width: 0; }
+    .process-proto {
+      font-size: 13px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .process-sub {
+      font-size: 11px; color: var(--muted); margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .status-pill {
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: var(--accent2); white-space: nowrap; flex-shrink: 0;
+    }
+    .status-pill.finalizado {
+      background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green);
+    }
+    .status-pill.pendente {
+      background: color-mix(in srgb, var(--amber) 14%, transparent); color: var(--amber);
+    }
+    .process-body {
+      border-top: 1px solid var(--border); padding: 14px 16px;
+      display: none; flex-direction: column; gap: 12px;
+    }
+    .process-body.open { display: flex; }
+    .field-group   { display: grid; grid-template-columns: 1fr 1fr;     gap: 10px; }
+    .field-group-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .field label {
+      font-size: 10px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .8px; display: block; margin-bottom: 3px;
+    }
+    .field span { font-size: 13px; }
+    .section-title {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .8px;
+    }
+    .acomp-list { display: flex; flex-direction: column; gap: 6px; }
+    .acomp-item {
+      padding: 9px 12px; background: var(--surface2); border-radius: 8px;
+      font-size: 12px; line-height: 1.55;
+      border-left: 3px solid var(--border);
+    }
+    .acomp-item.tipo-consumidor { border-left-color: var(--accent); }
+    .acomp-item.tipo-empresa    { border-left-color: var(--amber);  }
+    .acomp-item.tipo-procon     { border-left-color: var(--muted);  }
+    .acomp-header {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 8px; margin-bottom: 4px;
+    }
+    .acomp-badge {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .tipo-consumidor .acomp-badge { color: var(--accent2); }
+    .tipo-empresa    .acomp-badge { color: var(--amber);  }
+    .tipo-procon     .acomp-badge { color: var(--muted);  }
+    .acomp-date { font-size: 10px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .acomp-text { font-size: 12px; line-height: 1.55; }
+    .doc-list { display: flex; flex-direction: column; gap: 6px; }
+    .doc-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; background: var(--surface2); border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .doc-name { flex: 1; font-size: 12px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+    .text-block {
+      font-size: 12px; color: var(--muted); background: var(--surface2);
+      border-radius: 8px; padding: 10px 12px; line-height: 1.6;
+      max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+      border: 1px solid var(--border);
+    }
+    .no-data { font-size: 12px; color: var(--muted); padding: 2px 0; font-style: italic; }
+
+    /* ── Config tab ──────────────────────────────────────────────────────── */
+    .config-section-title {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+    .config-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    /* ── Diagnostics ─────────────────────────────────────────────────────── */
+    .diag-card {
+      background: var(--surface); border: 1px solid var(--amber);
+      border-radius: var(--radius); padding: 14px;
+      font-family: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
+      font-size: 11px; line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+      color: var(--text); max-height: 400px; overflow-y: auto;
+    }
+    .diag-ok   { color: var(--green); font-weight: 700; }
+    .diag-warn { color: var(--amber); font-weight: 700; }
+    .diag-err  { color: var(--red);   font-weight: 700; }
+  </style>
+</head>
+<body>
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-title">Procon<span>Capture</span></div>
+    <div class="spacer"></div>
+    <div id="authBadge" class="badge offline">
+      <span class="dot"></span>
+      <span id="authLabel">Aguardando login...</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Sidebar (usuário jurídico) -->
+    <div class="sidebar">
+      <button id="btnCaptureAll" class="btn btn-success" onclick="captureAll()">
+        <span class="icon">↻</span> Atualizar Processos
+      </button>
+
+      <div class="sidebar-section" style="margin-top:8px">Exportar</div>
+      <button class="btn btn-outline" onclick="exportCsv()">
+        <span class="icon">📊</span> Exportar CSV
+      </button>
+      <button class="btn btn-outline" onclick="exportJson()">
+        <span class="icon">📄</span> Exportar JSON
+      </button>
+
+      <div id="captureStatus" class="capture-status">Pronto</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="tabs">
+        <div class="tab active" data-tab="processos" onclick="switchTab(this)">
+          Processos (<span id="processCount">0</span>)
+        </div>
+        <div class="tab" data-tab="config" onclick="switchTab(this)">⚙ Configurações</div>
+      </div>
+
+      <!-- Aba: Processos -->
+      <div id="pane-processos" class="pane active">
+        <div id="emptyState" class="empty">
+          <div class="empty-icon">📂</div>
+          <div class="empty-title">Nenhum processo capturado</div>
+          <div class="empty-desc">
+            1. Faça login na janela do Procon SP que abrir<br>
+            2. Clique em <strong>"↻ Atualizar Processos"</strong><br><br>
+            Os dados são salvos automaticamente e carregados na próxima abertura do app.
+          </div>
+        </div>
+        <div id="processList" style="display:none; flex-direction:column; gap:12px;"></div>
+      </div>
+
+      <!-- Aba: Configurações -->
+      <div id="pane-config" class="pane">
+
+        <!-- Portal Procon SP -->
+        <div class="config-section-title">🌐 Portal Procon SP</div>
+        <div style="font-size:12px;color:var(--muted)">
+          Abra o portal para fazer login ou verificar a sessão. O app abre a janela automaticamente quando necessário.
+        </div>
+        <div class="config-row">
+          <button class="btn btn-primary btn-sm" onclick="openBrowser()" style="width:auto">
+            <span class="icon">🌐</span> Abrir Procon SP
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="checkAuth()" style="width:auto">
+            <span class="icon">🔄</span> Verificar Login
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="window.procon.openList()" style="width:auto">
+            <span class="icon">📋</span> Recarregar Lista
+          </button>
+        </div>
+
+        <!-- Diagnóstico -->
+        <div class="config-section-title">🔍 Diagnóstico da Sessão</div>
+        <div style="font-size:12px;color:var(--muted)">
+          Analisa o estado da sessão do Procon SP — localStorage, token OAuth, endpoints chamados.
+          Use quando a captura não encontrar processos.
+        </div>
+        <div class="config-row">
+          <button id="btnDiagnose" class="btn btn-warn btn-sm" onclick="runDiagnose()" style="width:auto">
+            <span class="icon">🔍</span> Executar Diagnóstico
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="window.procon.devTools()" style="width:auto">
+            <span class="icon">🛠</span> DevTools Procon SP
+          </button>
+        </div>
+        <div id="diagOutput" style="display:none"></div>
+
+        <!-- Dados salvos -->
+        <div class="config-section-title">💾 Dados Salvos</div>
+        <div style="font-size:12px;color:var(--muted)">
+          Os processos capturados são salvos automaticamente em
+          <code style="background:var(--bg);padding:2px 5px;border-radius:3px;font-size:11px">~/.procon-capture-data.json</code>
+          e carregados quando o app abre.
+        </div>
+        <div class="config-row">
+          <button class="btn btn-outline btn-sm" onclick="clearData()" style="width:auto">
+            🗑 Limpar Dados Salvos
+          </button>
+        </div>
+
+        <!-- Log interno -->
+        <div class="config-section-title">📋 Log Interno</div>
+        <div class="config-row">
+          <button class="btn btn-outline btn-sm" onclick="copyLog()" style="width:auto">📋 Copiar</button>
+          <button class="btn btn-outline btn-sm" onclick="saveLog()" style="width:auto">💾 Salvar</button>
+        </div>
+        <div id="logList"
+             style="display:flex;flex-direction:column;gap:3px;font-family:monospace;font-size:11px;">
+        </div>
+
+        <!-- API Raw (CDP) -->
+        <div class="config-section-title">🔌 Chamadas de API Capturadas</div>
+        <div id="rawList"
+             style="display:flex;flex-direction:column;gap:3px;font-family:monospace;font-size:11px;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Platform detection (drives CSS class on <html>) ───────────────────
+    ;(function() {
+      const ua = navigator.userAgent;
+      if (ua.includes('Macintosh') || navigator.platform === 'MacIntel')
+        document.documentElement.classList.add('mac');
+      else if (ua.includes('Windows'))
+        document.documentElement.classList.add('win');
+    })();
+
+    let isLoggedIn = false;
+    let processes  = [];
+
+    // ── Auth status ──────────────────────────────────────────────────────────
+    window.procon.onAuthStatus(({ loggedIn, url, tokenLen }) => {
+      isLoggedIn = loggedIn;
+      const badge = document.getElementById('authBadge');
+      const label = document.getElementById('authLabel');
+      badge.className = 'badge ' + (loggedIn ? 'online' : 'offline');
+      label.textContent = loggedIn
+        ? '✓ Conectado'
+        : 'Não autenticado';
+      addLog(loggedIn ? `✓ Autenticado (token ${tokenLen}c)` : `✗ Não autenticado — ${url}`);
+    });
+
+    // ── Processos atualizados ────────────────────────────────────────────────
+    window.procon.onProcessesUpdated(({ processes: updated }) => {
+      processes = updated;
+      renderProcesses();
+    });
+
+    // ── Status de captura ────────────────────────────────────────────────────
+    window.procon.onCaptureStatus(({ running, step }) => {
+      const el = document.getElementById('captureStatus');
+      el.className = 'capture-status' + (running ? ' running' : '');
+      el.textContent = running ? step : 'Pronto';
+      document.getElementById('btnCaptureAll').disabled = running;
+      document.getElementById('btnDiagnose').disabled   = running;
+      addLog(step);
+    });
+
+    // ── API capturada via CDP ────────────────────────────────────────────────
+    window.procon.onApiCaptured(({ path, status }) => {
+      const el = document.getElementById('rawList');
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:2px 4px;border-radius:3px;background:#1e293b;color:#94a3b8';
+      item.textContent = `[${status}] ${path}`;
+      el.prepend(item);
+      while (el.children.length > 100) el.lastChild.remove();
+    });
+
+    // ── Log ──────────────────────────────────────────────────────────────────
+    window.procon.onLog(msg => addLog(msg));
+
+    function addLog(msg) {
+      const el = document.getElementById('logList');
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:2px 4px;border-radius:3px;background:#1e293b;color:#94a3b8';
+      item.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+      el.prepend(item);
+      while (el.children.length > 200) el.lastChild.remove();
+    }
+
+    // ── Diagnóstico ──────────────────────────────────────────────────────────
+    window.procon.onDiagnoseResult(renderDiagnostic);
+
+    function renderDiagnostic(diag) {
+      const out = document.getElementById('diagOutput');
+      out.style.display = 'block';
+      out.innerHTML = '';
+
+      const card = document.createElement('div');
+      card.className = 'diag-card';
+
+      const tokenOk  = diag.hasToken;
+      const hasUuids = diag.domUuids && diag.domUuids.length > 0;
+      const hasApi   = diag.perfEntries && diag.perfEntries.length > 0;
+
+      let html = '';
+      html += `<span class="${tokenOk ? 'diag-ok' : 'diag-err'}">${tokenOk ? '✓' : '✗'} TOKEN: ${tokenOk ? diag.tokenSource : 'NÃO ENCONTRADO'}</span>\n`;
+      html += `<span class="${hasUuids ? 'diag-ok' : 'diag-warn'}">${hasUuids ? '✓' : '⚠'} UUIDs no DOM: ${diag.domUuids ? diag.domUuids.length : 0}</span>\n`;
+      html += `<span class="${hasApi ? 'diag-ok' : 'diag-warn'}">${hasApi ? '✓' : '⚠'} Chamadas de API: ${diag.perfEntries ? diag.perfEntries.length : 0}</span>\n`;
+      html += `\n<strong>URL:</strong> ${escHtml(diag.url || '')}\n`;
+      html += `<strong>Título:</strong> ${escHtml(diag.title || '')}\n`;
+      html += `<strong>Angular detectado:</strong> ${diag.angularDetected ? 'sim' : 'não'}\n`;
+
+      const lsKeys = Object.keys(diag.localStorage || {});
+      html += `\n<strong>localStorage (${lsKeys.length} chaves):</strong>\n`;
+      if (lsKeys.length === 0) {
+        html += `  <span class="diag-warn">  (vazio)</span>\n`;
+      } else {
+        lsKeys.forEach(k => {
+          const v = (diag.localStorage[k] || '');
+          const isJwt = v.startsWith('eyJ');
+          html += `  ${isJwt ? '<span class="diag-ok">' : ''}${escHtml(k)}: ${escHtml(v)}${isJwt ? ' ← JWT</span>' : ''}\n`;
+        });
+      }
+
+      const ssKeys = Object.keys(diag.sessionStorage || {});
+      html += `\n<strong>sessionStorage (${ssKeys.length} chaves):</strong>\n`;
+      if (ssKeys.length === 0) {
+        html += `  <span class="diag-warn">  (vazio)</span>\n`;
+      } else {
+        ssKeys.forEach(k => {
+          const v = (diag.sessionStorage[k] || '');
+          const isJwt = v.startsWith('eyJ');
+          html += `  ${isJwt ? '<span class="diag-ok">' : ''}${escHtml(k)}: ${escHtml(v)}${isJwt ? ' ← JWT</span>' : ''}\n`;
+        });
+      }
+
+      const cookies = diag.cookieKeys || [];
+      html += `\n<strong>Cookies (${cookies.length}):</strong> ${escHtml(cookies.join(', ') || '(nenhum)')}\n`;
+
+      const perf = diag.perfEntries || [];
+      html += `\n<strong>Chamadas de API (${perf.length}):</strong>\n`;
+      if (perf.length === 0) {
+        html += `  <span class="diag-warn">  (nenhuma — Angular ainda não carregou ou não fez chamadas)</span>\n`;
+      } else {
+        perf.forEach(p => { html += `  ${escHtml(p)}\n`; });
+      }
+
+      const uuids = diag.domUuids || [];
+      html += `\n<strong>UUIDs no DOM (${uuids.length}):</strong>\n`;
+      if (uuids.length === 0) {
+        html += `  <span class="diag-warn">  (nenhum — lista provavelmente não renderizou)</span>\n`;
+      } else {
+        html += `  ${escHtml(uuids.slice(0, 10).join('\n  '))}\n`;
+      }
+
+      html += `\n<strong>Prévia da página:</strong>\n${escHtml((diag.bodyPreview || '').slice(0, 300))}\n`;
+
+      html += '\n--- DIAGNÓSTICO ---\n';
+      if (!tokenOk && !hasApi && !hasUuids) {
+        html += '<span class="diag-err">❌ Sessão não iniciada ou página de login.\n   Abra o Procon SP, faça login e tente novamente.</span>\n';
+      } else if (!tokenOk && (hasApi || hasUuids)) {
+        html += '<span class="diag-warn">⚠️ Dados na página mas token não encontrado.\n   A captura tentará usando cookies de sessão.</span>\n';
+      } else if (tokenOk && !hasApi && !hasUuids) {
+        html += '<span class="diag-warn">⚠️ Token encontrado mas sem dados na página.\n   Aguarde Angular carregar ou clique "Recarregar Lista".</span>\n';
+      } else if (tokenOk && (hasApi || hasUuids)) {
+        html += '<span class="diag-ok">✓ Sessão ativa com dados disponíveis.\n   Clique em "Capturar Tudo" para iniciar.</span>\n';
+      }
+
+      card.innerHTML = html;
+      out.appendChild(card);
+    }
+
+    // ── Render processos ─────────────────────────────────────────────────────
+    function renderProcesses() {
+      const empty = document.getElementById('emptyState');
+      const list  = document.getElementById('processList');
+      const count = document.getElementById('processCount');
+      count.textContent = processes.length;
+      if (processes.length === 0) {
+        empty.style.display = 'flex';
+        list.style.display  = 'none';
+        return;
+      }
+      empty.style.display = 'none';
+      list.style.display  = 'flex';
+      list.innerHTML = '';
+      processes.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'process-card';
+        card.innerHTML = buildCard(p);
+        list.appendChild(card);
+      });
+    }
+
+    // ── Utilitários de formatação ────────────────────────────────────────────
+    function fmtDate(iso) {
+      if (!iso) return null;
+      try {
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+      } catch { return iso; }
+    }
+
+    function statusClass(status) {
+      if (!status) return '';
+      const s = status.toLowerCase();
+      if (s.includes('finaliz') || s.includes('encerr') || s.includes('arquiv')) return 'finalizado';
+      if (s.includes('pendent') || s.includes('aguard') || s.includes('analise')) return 'pendente';
+      return '';
+    }
+
+    function escHtml(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function escAttr(s) { return String(s ?? '').replace(/"/g,'&quot;'); }
+
+    // ── Card de processo ─────────────────────────────────────────────────────
+    function buildCard(p) {
+      const raw = p.raw || {};
+
+      const dataAbertura    = fmtDate(p.dataCriacao || raw.dataCriacao || raw.dataAbertura);
+      const dataAtualizacao = fmtDate(p.dataAtualizacao || raw.ultimaAtualizacao);
+      const prazo           = fmtDate(raw.prazoDeAtendimento);
+      const hasTresDatas    = !!(dataAbertura && dataAtualizacao && prazo);
+
+      // Andamentos
+      const acompHtml = Array.isArray(p.acompanhamento) && p.acompanhamento.length > 0
+        ? `<div class="section-title">Andamentos (${p.acompanhamento.length})</div>
+           <div class="acomp-list">
+             ${p.acompanhamento.slice(0, 15).map(a => {
+               if (typeof a === 'string') return `<div class="acomp-item tipo-procon">
+                 <div class="acomp-text">${escHtml(a.slice(0,500))}</div></div>`;
+
+               // Campos reais do Procon SP (interacoes)
+               const dataA = a.criadoEm || a.data || a.dataAndamento || a.dataMovimentacao || a.dataCriacao || '';
+               // Monta descrição — se null mas tem documentos, mostra contagem de docs
+               const docLinks = Array.isArray(a.linksDosDocumentos) ? a.linksDosDocumentos : [];
+               const desc  = a.descricao || a.texto || a.observacao || a.acao || a.tipo || a.situacao ||
+                             (docLinks.length > 0 ? null : '(sem descrição)');
+               const autor = a.autor || '';
+               const souRemetente = a.souRemetente === true;
+
+               // Classifica o tipo de interação
+               let tipoClass, tipoLabel, tipoIcon;
+               if (souRemetente) {
+                 tipoClass = 'tipo-consumidor'; tipoIcon = '🧑'; tipoLabel = 'Você';
+               } else if (!autor || autor === '-' || autor.toLowerCase().includes('procon')) {
+                 tipoClass = 'tipo-procon'; tipoIcon = '⚖️'; tipoLabel = 'Procon';
+               } else {
+                 tipoClass = 'tipo-empresa'; tipoIcon = '🏢';
+                 tipoLabel = autor.length > 28 ? autor.slice(0,25) + '…' : autor;
+               }
+
+               return `<div class="acomp-item ${tipoClass}">
+                 <div class="acomp-header">
+                   <span class="acomp-badge">${tipoIcon} ${escHtml(tipoLabel)}</span>
+                   ${dataA ? `<span class="acomp-date">${escHtml(fmtDate(dataA) || dataA)}</span>` : ''}
+                 </div>
+                 <div class="acomp-text">${desc ? escHtml(String(desc)) : ''}${
+                   docLinks.length > 0
+                     ? `${desc ? '<br>' : ''}<span style="color:var(--muted)">📎 ${docLinks.length} documento(s) anexado(s)</span>`
+                     : ''
+                 }</div>
+               </div>`;
+             }).join('')}
+             ${p.acompanhamento.length > 15 ? `<div class="acomp-item tipo-procon" style="text-align:center;color:var(--muted)">+ ${p.acompanhamento.length - 15} mais andamentos</div>` : ''}
+           </div>`
+        : `<div class="no-data">Andamentos não capturados ainda — clique em "↻ Atualizar Processos" para obter detalhes completos.</div>`;
+
+      // Documentos
+      const docsHtml = Array.isArray(p.documentos) && p.documentos.length > 0
+        ? `<div class="section-title">Documentos (${p.documentos.length})</div>
+           <div class="doc-list">
+             ${p.documentos.map((d, i) => `
+               <div class="doc-item">
+                 <span class="icon">📎</span>
+                 <span class="doc-name">${escHtml(d.nome || 'Documento ' + (i+1))}</span>
+                 ${d.url ? `<button class="btn btn-secondary btn-sm"
+                   onclick="downloadDoc('${escAttr(d.url)}','${escAttr(d.nome||'doc')}')">
+                   ⬇ Baixar</button>` : ''}
+               </div>`).join('')}
+           </div>`
+        : `<div class="no-data">Nenhum documento disponível.</div>`;
+
+      return `
+        <div class="process-header" onclick="toggleCard(this)">
+          <div class="process-id">${p.id.slice(0,8)}…</div>
+          <div class="process-meta">
+            <div class="process-proto">${escHtml(p.protocolo || '—')}</div>
+            <div class="process-sub">${escHtml(p.empresa || '—')}</div>
+          </div>
+          <div class="status-pill ${statusClass(p.status)}">${escHtml(p.status || '—')}</div>
+        </div>
+        <div class="process-body">
+          <div class="${hasTresDatas ? 'field-group-3' : 'field-group'}">
+            <div class="field">
+              <label>Data de Abertura</label>
+              <span>${escHtml(dataAbertura || '—')}</span>
+            </div>
+            <div class="field">
+              <label>Última Atualização</label>
+              <span>${escHtml(dataAtualizacao || '—')}</span>
+            </div>
+            ${prazo ? `<div class="field"><label>Prazo de Atendimento</label><span>${escHtml(prazo)}</span></div>` : ''}
+          </div>
+          ${p.descricao ? `<div class="text-block">${escHtml(p.descricao)}</div>` : ''}
+          ${acompHtml}
+          ${docsHtml}
+          <div class="actions">
+            <button class="btn btn-outline btn-sm" onclick="openDetail('${p.id}')">
+              🔗 Ver no Procon SP
+            </button>
+          </div>
+        </div>`;
+    }
+
+    function toggleCard(header) {
+      const body = header.nextElementSibling;
+      body.classList.toggle('open');
+    }
+
+    function switchTab(el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('pane-' + el.dataset.tab).classList.add('active');
+    }
+
+    // ── Ações ────────────────────────────────────────────────────────────────
+    async function openBrowser() {
+      await window.procon.showBrowser();
+      await window.procon.openList();
+    }
+
+    async function captureAll() {
+      document.getElementById('btnCaptureAll').disabled = true;
+      document.getElementById('captureStatus').textContent = 'Iniciando...';
+      await window.procon.captureAll();
+    }
+
+    async function checkAuth() {
+      addLog('Verificando autenticação...');
+      await window.procon.checkAuth();
+    }
+
+    async function runDiagnose() {
+      document.getElementById('btnDiagnose').disabled = true;
+      document.getElementById('btnDiagnose').textContent = '⏳ Analisando...';
+      addLog('Rodando diagnóstico...');
+      document.getElementById('diagOutput').style.display = 'none';
+      try {
+        const result = await window.procon.diagnose();
+        if (result) renderDiagnostic(result);
+      } finally {
+        document.getElementById('btnDiagnose').disabled = false;
+        document.getElementById('btnDiagnose').innerHTML = '<span class="icon">🔍</span> Executar Diagnóstico';
+      }
+    }
+
+    async function exportJson() {
+      const r = await window.procon.exportJson();
+      if (r?.saved) alert('✅ Salvo em: ' + r.filePath);
+    }
+
+    async function exportCsv() {
+      const r = await window.procon.exportCsv();
+      if (r?.saved) alert('✅ Salvo em: ' + r.filePath);
+    }
+
+    async function downloadDoc(url, nome) {
+      await window.procon.downloadDoc(url, nome);
+    }
+
+    async function openDetail(id) {
+      await window.procon.openDetail(id);
+      await window.procon.showBrowser();
+    }
+
+    async function clearData() {
+      if (!confirm('Apagar todos os processos salvos? A próxima captura irá re-buscá-los.')) return;
+      await window.procon.clearData();
+      addLog('🗑 Dados apagados');
+    }
+
+    function copyLog() {
+      const items = Array.from(document.getElementById('logList').children)
+        .reverse().map(el => el.textContent).join('\n');
+      navigator.clipboard.writeText(items).then(() => alert('✅ Log copiado!'));
+    }
+
+    function saveLog() {
+      const items = Array.from(document.getElementById('logList').children)
+        .reverse().map(el => el.textContent).join('\n');
+      window.procon.saveLog(items);
+    }
+
+    // Carrega processos já existentes ao iniciar
+    window.addEventListener('DOMContentLoaded', async () => {
+      const loaded = await window.procon.getProcesses();
+      if (loaded?.length > 0) { processes = loaded; renderProcesses(); }
+    });
+  </script>
+</body>
+</html>
