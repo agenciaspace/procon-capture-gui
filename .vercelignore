@@ -1,0 +1,9 @@
+node_modules
+out
+dist
+*.js.map
+electron
+renderer
+scripts
+tsconfig.json
+assets
