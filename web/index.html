@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Capture e exporte automaticamente seus processos do Procon SP Digital. Tudo roda na sua máquina." />
+  <title>ProconCapture — Capture seus processos do Procon SP</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <h1><span>Procon</span>Capture</h1>
+      <p class="tagline">Capture seus processos do Procon SP sem copiar e colar</p>
+      <span class="privacy-badge">🔒 Tudo roda na sua máquina. Nenhum dado sai daqui.</span>
+    </div>
+  </section>
+
+  <div class="container">
+
+    <!-- Download (preenchido por JS) -->
+    <div class="download-section" id="download">
+      <p class="loading-state">Carregando informações de download…</p>
+    </div>
+
+    <!-- Passo a passo -->
+    <section class="steps-section">
+      <h2>Como usar</h2>
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Instale o ProconCapture</h3>
+            <p>Baixe o instalador para sua plataforma acima e abra o arquivo. Na primeira vez, pode ser necessário confirmar a abertura — veja a nota ao lado do botão de download.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Inicie a captura</h3>
+            <p>Clique em <strong>🔄 Capturar Todos</strong> na barra lateral. O portal do Procon SP abre automaticamente em uma janela do app.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Faça login no portal</h3>
+            <p>Entre normalmente em <strong>consumidor2.procon.sp.gov.br</strong> com seu CPF e senha. O app aguarda em background — não é necessário fazer nada.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h3>Exporte seus processos</h3>
+            <p>Após o login, a captura roda automaticamente. Os processos aparecem na aba <strong>Processos</strong>. Clique em <strong>⬇ Exportar</strong> para salvar como <code>JSON</code> ou <code>CSV</code>.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div><!-- /container -->
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>
+        <strong>Privacidade:</strong> o ProconCapture lê seus dados diretamente do portal usando sua sessão autenticada
+        e os salva em <code>~/.procon-capture-data.json</code> na sua máquina.
+        Nenhuma informação é enviada a servidores externos.
+      </p>
+      <div class="footer-links">
+        <a href="https://github.com/agenciaspace/procon-capture-gui">GitHub</a>
+        <a href="https://github.com/agenciaspace/procon-capture-gui/blob/main/README.md">README</a>
+        <a href="https://github.com/agenciaspace/procon-capture-gui/blob/main/LICENSE">MIT License</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
