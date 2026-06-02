@@ -14,9 +14,9 @@ GUI desktop para capturar e exportar automaticamente seus processos do [Procon S
 
 | Plataforma | Formato | Link |
 |---|---|---|
-| macOS (Apple Silicon + Intel) | `.dmg` | [Releases →](https://github.com/leonhatori/procon-capture-gui/releases/latest) |
-| Windows | `.exe` (installer) | [Releases →](https://github.com/leonhatori/procon-capture-gui/releases/latest) |
-| Linux | `.AppImage` `.deb` `.rpm` | [Releases →](https://github.com/leonhatori/procon-capture-gui/releases/latest) |
+| macOS (Apple Silicon + Intel) | `.dmg` | [Releases →](https://github.com/agenciaspace/procon-capture-gui/releases/latest) |
+| Windows | `.exe` (installer) | [Releases →](https://github.com/agenciaspace/procon-capture-gui/releases/latest) |
+| Linux | `.AppImage` `.deb` `.rpm` | [Releases →](https://github.com/agenciaspace/procon-capture-gui/releases/latest) |
 
 ### Primeira abertura
 
@@ -47,7 +47,7 @@ GUI desktop para capturar e exportar automaticamente seus processos do [Procon S
 **Pré-requisitos:** Node.js 20+, npm, Git
 
 ```bash
-git clone https://github.com/leonhatori/procon-capture-gui.git
+git clone https://github.com/agenciaspace/procon-capture-gui.git
 cd procon-capture-gui
 npm install
 npm run dev
