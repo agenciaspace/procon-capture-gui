@@ -49,7 +49,7 @@
 
   // ── Notas de primeira execução ─────────────────────────────
   const FIRST_RUN = {
-    mac:   '<strong>Primeira abertura no macOS:</strong> Ctrl+clique no app → <em>Abrir</em> → <em>Abrir</em> (necessário por não ter assinatura de desenvolvedor).',
+    mac:   '<strong>Primeira abertura no macOS:</strong> Se aparecer aviso "Apple could not verify…", vá em <em>Ajustes do Sistema → Privacidade e Segurança</em>, role até o fim e clique em <em>"Abrir assim mesmo"</em>.',
     win:   '<strong>Primeira abertura no Windows:</strong> Se aparecer aviso do SmartScreen, clique em <em>"Mais informações"</em> → <em>"Executar assim mesmo"</em>.',
     linux: '<strong>Linux AppImage:</strong> antes de abrir, execute no terminal: <code>chmod +x ProconCapture-*.AppImage && ./ProconCapture-*.AppImage</code>',
   }
