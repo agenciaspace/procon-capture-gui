@@ -21,7 +21,7 @@ GUI desktop para capturar e exportar automaticamente seus processos do [Procon S
 ### Primeira abertura
 
 - **macOS:** se aparecer aviso "Apple could not verify…", vá em **Ajustes do Sistema → Privacidade e Segurança**, role até o fim e clique em **"Abrir assim mesmo"**.
-- **Windows:** clique em "Mais informações" → "Executar assim mesmo" no aviso do SmartScreen.
+- **Windows:** se aparecer a tela azul do SmartScreen ("O Windows protegeu seu PC"), clique em **"Mais informações"** (texto pequeno abaixo) e depois em **"Executar assim mesmo"**.
 - **Linux AppImage:** `chmod +x ProconCapture-*.AppImage && ./ProconCapture-*.AppImage`
 
 ---
