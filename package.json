@@ -13,6 +13,10 @@
     "dist:linux": "npm run build && electron-builder --linux",
     "dist:ci":    "npm run build && electron-builder --publish always"
   },
+  "author": {
+    "name": "agenciaspace",
+    "email": "leonhatori@gmail.com"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/agenciaspace/procon-capture-gui"
